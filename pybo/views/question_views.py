@@ -58,14 +58,20 @@ def _list():
     
     # 페이징
     question_list = question_list.paginate(page, per_page=10)
+    print('Question: ', question_list)
     return render_template('question/question_list.html', question_list=question_list, page=page, kw=kw, so=so)
 
 
 @bp.route('/detail/<int:question_id>')
 def detail(question_id):
+    # 입력파라미터
+    page = request.args.get('page', type=int, default=1)
     form = AnswerForm()
     question = Question.query.get_or_404(question_id)
-    return render_template('question/question_detail.html', question=question, form=form)
+    answer_list = Answer.query.filter_by(question_id=question_id).order_by(Answer.create_date.desc())
+    answer_list = answer_list.paginate(page, per_page=5)
+    print('Answer: ', answer_list)
+    return render_template('question/question_detail.html', question=question, answer_list=answer_list, form=form)
 
 
 @bp.route('/create/', methods=('GET', 'POST'))

@@ -1,4 +1,3 @@
-from datetime import datetime
 from flask import Blueprint, url_for, request, render_template, g, flash
 from werkzeug.utils import redirect
 
@@ -23,7 +22,6 @@ def create(question_id):
         answer = Answer(question=question, content=content, create_date=datetime.now(), user=g.user)
         db.session.add(answer)
         db.session.commit()
-        # return redirect(url_for('question.detail', question_id=question_id))
         return redirect(f"{url_for('question.detail', question_id=question_id)}#answer_{answer.id}")
     return render_template('question/question_detail.html', question=question, form=form)
 
