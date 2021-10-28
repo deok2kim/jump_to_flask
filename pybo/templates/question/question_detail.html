@@ -73,7 +73,18 @@
                 </div>
             </div>
         </div>
-        <h5 class="border-bottom my-3 py-2">{{ answer_list.total }}개의 답변이 있습니다.</h5>
+        <div class="d-flex justify-content-between border-top pt-4">
+            <div>
+                <h5>
+                    <strong>{{ answer_list.total }}</strong>개의 답변이 있습니다.
+                    <small class="ml-5">{{ answer_list.page }} / {{ answer_list.pages }} page</small>
+                </h5>
+            </div>
+            <div class="btn-group-sm">
+                <button class="so btn btn-secondary" value="recommend">추천순</button>
+                <button class="so btn btn-secondary" value="recent">최신순</button>
+            </div>
+        </div>
         {% for answer in answer_list.items %}
             <a name="answer_{{ answer.id }}"></a>
             <div class="row my-3">
@@ -83,8 +94,6 @@
                        class="recommend btn btn-sm btn-secondary btn-block my-1">추천</a>
                 </div>
                 <div class="col-11">
-
-
                     <div class="card my-3">
                         <div class="card-body">
                             <div class="card-text" style="white-space: pre-line;">{{ answer.content|markdown }}</div>
@@ -160,8 +169,9 @@
                             <a href="#" class="page-link" data-page="{{ page_num }}">{{ page_num }}</a>
                         </li>
                     {% else %}
-                        <li class="page-item active" aria-current="page" >
-                            <a href="#" class="page-link" data-page="{{ page_num }}" id="current_page">{{ page_num }}</a>
+                        <li class="page-item active" aria-current="page">
+                            <a href="#" class="page-link" data-page="{{ page_num }}"
+                               id="current_page">{{ page_num }}</a>
                         </li>
                     {% endif %}
                 {% else %}
@@ -198,8 +208,9 @@
         </form>
         <!-- 답변 등록 폼 End -->
         <!-- 답변 페이지네이션 버튼 Start -->
-        <form method="get" id="paginationForm" action="{{ url_for('question.detail', question_id=question.id) }}">
+        <form method="get" id="getAnswerForm" action="{{ url_for('question.detail', question_id=question.id) }}">
             <input type="hidden" name="page" id="page" value="{{ page or '' }}">
+            <input type="hidden" name="so" id="so" value="{{ so or '' }}">
         </form>
         <!-- 답변 페이지네이션 버튼 End -->
     </div>
@@ -224,12 +235,17 @@
             $(".page-link").on("click", function () {
                 const clicked_page = $(this).data('page');
                 const current_page = $("#current_page").data('page');
-                console.log(clicked_page, current_page)
                 if (clicked_page !== current_page) {
                     $("#page").val(clicked_page);
-                    $("#paginationForm").submit();
+                    $("#getAnswerForm").submit();
                 }
-            })
+            });
+
+            $(".so").on("click", function () {
+                $("#so").val($(this).val());
+                $("#page").val(1);
+                $("#getAnswerForm").submit();
+            });
         })
     </script>
 {% endblock %}

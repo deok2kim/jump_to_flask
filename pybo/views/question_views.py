@@ -4,9 +4,8 @@ from flask import Blueprint, render_template, request, url_for, g, flash
 from werkzeug.utils import redirect
 
 from .. import db
-from ..models import Question, Answer, User, question_voter
+from ..models import Question, Answer, User, question_voter, answer_voter
 from ..forms import QuestionForm, AnswerForm
-
 
 from sqlalchemy import func
 from .auth_views import login_required
@@ -39,10 +38,8 @@ def _list():
     else:
         question_list = Question.query.order_by(Question.create_date.desc())
     # 조회
-    # question_list = Question.query.order_by(Question.create_date.desc())
     if kw:
         search = f'%{kw}%'
-        print(search)
         sub_query = db.session.query(Answer.question_id, Answer.content, User.username) \
             .join(User, Answer.user_id == User.id).subquery()
         question_list = question_list \
@@ -55,23 +52,41 @@ def _list():
                     sub_query.c.username.ilike(search)  # 답변작성자                    
                     ) \
             .distinct()
-    
+
     # 페이징
     question_list = question_list.paginate(page, per_page=10)
-    print('Question: ', question_list)
     return render_template('question/question_list.html', question_list=question_list, page=page, kw=kw, so=so)
 
 
 @bp.route('/detail/<int:question_id>')
 def detail(question_id):
-    # 입력파라미터
-    page = request.args.get('page', type=int, default=1)
     form = AnswerForm()
     question = Question.query.get_or_404(question_id)
-    answer_list = Answer.query.filter_by(question_id=question_id).order_by(Answer.create_date.desc())
+
+    # 답변 리스트
+    # 입력파라미터
+    page = request.args.get('page', type=int, default=1)
+    so = request.args.get('so', type=str, default='recommend')
+    print(page, so)
+    sub_query = db.session.query(answer_voter.c.answer_id, func.count('*').label('num_voter')) \
+        .group_by(answer_voter.c.answer_id) \
+        .subquery()
+
+    # 정렬
+    if so == 'recommend':
+        answer_list = Answer.query \
+            .outerjoin(sub_query, Answer.id == sub_query.c.answer_id) \
+            .filter(Answer.question_id == question_id) \
+            .order_by(sub_query.c.num_voter.desc(), Answer.create_date.desc())
+    else:
+        answer_list = Answer.query \
+            .outerjoin(sub_query, Answer.id == sub_query.c.answer_id) \
+            .filter(Answer.question_id == question_id) \
+            .order_by(Answer.create_date.desc())
+
+    # 페이징
     answer_list = answer_list.paginate(page, per_page=5)
-    print('Answer: ', answer_list)
-    return render_template('question/question_detail.html', question=question, answer_list=answer_list, form=form)
+    return render_template('question/question_detail.html', question=question, answer_list=answer_list, form=form, so=so, page=page)
 
 
 @bp.route('/create/', methods=('GET', 'POST'))
